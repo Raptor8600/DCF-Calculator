@@ -2,6 +2,9 @@
 
 A professional-grade, multi-stage Discounted Cash Flow (DCF) modeling suite designed for granular financial analysis, equity research, and credit assessment.
 
+## URL
+https://raptor8600.github.io/DCF-Calculator/
+
 ## 🚀 The 4-Step Workflow
 
 ### 1. Raw Data Input
@@ -57,3 +60,4 @@ A **Discounted Cash Flow (DCF)** model operates on the principle of the **Time V
 
 ---
 *Created for professional financial modeling and educational analysis.*
+
