@@ -409,3 +409,6 @@ table th {
     font-weight: 600;
     color: var(--accent-color);
 }
+.hidden {
+    display: none !important;
+}

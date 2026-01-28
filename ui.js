@@ -69,6 +69,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const panel = document.getElementById('investmentWorthinessPanel');
             if (panel) panel.classList.toggle('hidden', !e.target.checked);
         });
+
+        document.getElementById('toggleExport').addEventListener('change', (e) => {
+            const card = document.getElementById('exportCard');
+            if (card) card.classList.toggle('hidden', !e.target.checked);
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            exportToExcel();
+        });
+
+        // Initialize visibility
+        const toggleInv = document.getElementById('toggleInvestment');
+        if (toggleInv) document.getElementById('investmentWorthinessPanel').classList.toggle('hidden', !toggleInv.checked);
+
+        const toggleExp = document.getElementById('toggleExport');
+        if (toggleExp) document.getElementById('exportCard').classList.toggle('hidden', !toggleExp.checked);
     };
 
     const changeStep = (dir) => {
@@ -318,6 +334,110 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `</tr>`;
         });
         table.innerHTML = html;
+    };
+
+    const exportToExcel = async () => {
+        if (typeof ExcelJS === 'undefined') {
+            alert("Excel library failed to load. Please check your internet connection.");
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'DCF Super Calculator v1.0';
+
+        // --- SHEET 1: EXECUTIVE SUMMARY ---
+        const wsSummary = workbook.addWorksheet('Executive Summary');
+        wsSummary.columns = [{ width: 30 }, { width: 20 }, { width: 40 }];
+
+        const titleRow = wsSummary.addRow(['DCF Super Calculator v1.0 - Financial Report']);
+        titleRow.font = { bold: true, size: 14 };
+        wsSummary.addRow(['']);
+
+        const headerRow = wsSummary.addRow(['Metric', 'Value', 'Context']);
+        headerRow.font = { bold: true };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+
+        wsSummary.addRows([
+            ['Implied Share Price', '$' + document.getElementById('impliedPrice').innerText, 'Calculated Intrinsic Value'],
+            ['Current Market Price', '$' + document.getElementById('marketPrice').value, 'Current Trading Quote'],
+            ['IRR (Internal Rate of Return)', document.getElementById('irrValue').innerText, 'Annualized Projected Return'],
+            ['Upside / Downside', document.getElementById('upsideValue').innerText, 'Value Relative to Market Price'],
+            ['Margin of Safety', document.getElementById('mosValue').innerText, 'Risk Buffet Margin'],
+            ['Model Verdict', document.getElementById('verdictValue').innerText, 'Automated Assessment']
+        ]);
+
+        // EMBED CHART
+        try {
+            const canvas = document.getElementById('fcfChart');
+            const dataUrl = canvas.toDataURL('image/png');
+            const imageId = workbook.addImage({
+                base64: dataUrl,
+                extension: 'png',
+            });
+            wsSummary.addImage(imageId, {
+                tl: { col: 0, row: 12 },
+                ext: { width: 550, height: 350 }
+            });
+        } catch (e) {
+            console.warn("Chart export failed", e);
+        }
+
+        // --- SHEET 2: BALANCE SHEET & INPUTS ---
+        const wsInputs = workbook.addWorksheet('Balance Sheet & Inputs');
+        wsInputs.columns = [{ width: 30 }, { width: 25 }];
+
+        wsInputs.addRow(['MODEL INPUT SNAPSHOT (BASELINE)']).font = { bold: true };
+        wsInputs.addRow(['']);
+        const inputRows = [
+            ['Baseline Units', document.getElementById('units').value],
+            ['Price per Unit', document.getElementById('price').value],
+            ['Unit Growth Rate', document.getElementById('unitGrowth').value + '%'],
+            ['Price Growth Rate', document.getElementById('priceGrowth').value + '%'],
+            ['COGS % of Revenue', document.getElementById('cogsPct').value + '%'],
+            ['SG&A % of Revenue', document.getElementById('sgaPct').value + '%'],
+            ['D&A % of Revenue', document.getElementById('daPct').value + '%'],
+            ['Tax Rate', document.getElementById('taxRate').value + '%'],
+            ['CapEx % of Revenue', document.getElementById('capexPct').value + '%'],
+            ['Δ NWC % of Revenue Δ', document.getElementById('nwcPct').value + '%'],
+            [''],
+            ['Current Net Debt ($M)', document.getElementById('netDebt').value],
+            ['Shares Outstanding (M)', document.getElementById('shares').value],
+            ['Annual Interest Expense ($M)', document.getElementById('interestExpense').value],
+            ['Expected Net Borrowing ($M)', document.getElementById('netBorrowing').value]
+        ];
+        wsInputs.addRows(inputRows);
+
+        // --- SHEET 3: FINANCIAL MODEL ---
+        const wsModel = workbook.addWorksheet('5-Year Projection Model');
+        const mHeader = ["Line Item ($M)", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5"];
+        const mhRow = wsModel.addRow(mHeader);
+        mhRow.font = { bold: true };
+        mhRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+
+        const getRow = (label, key) => [label, ...detailedProjections.map(p => Math.round(p[key]))];
+
+        wsModel.addRows([
+            getRow("Revenue", "revenue"),
+            getRow("COGS", "cogs"),
+            getRow("Gross Profit", "grossProfit"),
+            getRow("SG&A", "sga"),
+            getRow("EBITDA", "ebitda"),
+            getRow("D&A", "da"),
+            getRow("EBIT", "ebit"),
+            getRow("Taxes", "taxes"),
+            getRow("NOPAT", "nopat"),
+            [''],
+            getRow("Unlevered FCF (UFCF)", "ufcf"),
+            [''],
+            getRow("Net Income", "netIncome"),
+            getRow("Levered FCF (LFCF)", "lfcf")
+        ]);
+        wsModel.columns = [{ width: 25 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }];
+
+        // TRIGGER DOWNLOAD
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `DCF_Advanced_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
     init();

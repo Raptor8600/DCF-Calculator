@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 
 <body>
@@ -167,6 +169,12 @@
                                     Include Investment Worthiness
                                 </label>
                             </div>
+                            <div class="input-group flex-row">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="toggleExport" checked>
+                                    Include Export Features
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -257,6 +265,15 @@
                             <div class="credit-status" id="creditStatus">
                                 <p>Checking credit worthiness...</p>
                             </div>
+                        </div>
+
+                        <div class="card" id="exportCard">
+                            <h3>Download Full Report</h3>
+                            <p class="subtitle">Download a static Excel (.xlsx) file of this model.</p>
+                            <button id="exportBtn" class="btn-primary"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); width: 100%; margin-top: 10px; font-weight: 600;">
+                                📥 Download Financial Report
+                            </button>
                         </div>
 
                         <div class="card" id="investmentWorthinessPanel">
