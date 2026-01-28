@@ -64,6 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const panel = document.getElementById('creditMetricsPanel');
             if (panel) panel.classList.toggle('hidden', !e.target.checked);
         });
+
+        document.getElementById('toggleInvestment').addEventListener('change', (e) => {
+            const panel = document.getElementById('investmentWorthinessPanel');
+            if (panel) panel.classList.toggle('hidden', !e.target.checked);
+        });
     };
 
     const changeStep = (dir) => {
@@ -130,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             netDebt: parseFloat(document.getElementById('netDebt').value) || 0,
             sharesOutstanding: parseFloat(document.getElementById('shares').value) || 1,
             discountRate: (parseFloat(document.getElementById('discountRate').value) || 0) / 100,
+            marketPrice: parseFloat(document.getElementById('marketPrice').value) || 0,
             tvMethod: document.getElementById('tvMethod').value,
             tvInput: document.getElementById('tvMethod').value === 'growth'
                 ? (parseFloat(document.getElementById('tvInput').value) || 0) / 100
@@ -182,8 +188,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (credit.interestCoverage > 3 && credit.debtToEbitda < 4) {
             creditStatus.innerHTML = '<p style="color: #10b981;">Strong Credit Profile: Investment Grade.</p>';
         } else {
-            creditStatus.innerHTML = '<p style="color: #f59e0b;">Covenant Warning: High Leverage.</p>';
+            creditStatus.innerHTML = '<p style="color: #f59e0b;">Covenant Warning: High Leverage detected.</p>';
         }
+
+        // 5. Investment Metrics (IRR, Upside, Verdict)
+        const cfForIRR = detailedProjections.map(p => (inputs.modelType === 'levered' ? p.lfcf : p.ufcf));
+        const tvForIRR = terminalValue;
+        const targetValue = (inputs.modelType === 'levered')
+            ? (inputs.marketPrice * inputs.sharesOutstanding)
+            : (inputs.marketPrice * inputs.sharesOutstanding + inputs.netDebt);
+
+        const irr = DCFLite.calculateIRR(cfForIRR, tvForIRR, targetValue, inputs.midYear);
+        const upside = inputs.marketPrice > 0 ? (sharePrice / inputs.marketPrice) - 1 : 0;
+        const mos = sharePrice > 0 ? (1 - (inputs.marketPrice / sharePrice)) * 100 : 0;
+        const verdict = DCFLite.getInvestmentVerdict(upside, irr, inputs.discountRate);
+
+        document.getElementById('irrValue').innerText = `${(irr * 100).toFixed(1)}%`;
+        document.getElementById('upsideValue').innerText = `${(upside * 100).toFixed(1)}%`;
+        document.getElementById('mosValue').innerText = `${mos.toFixed(1)}%`;
+
+        const vValue = document.getElementById('verdictValue');
+        vValue.innerText = verdict.label;
+        vValue.style.color = verdict.color;
+
+        document.getElementById('upsideValue').style.color = upside >= 0 ? "#10b981" : "#ef4444";
 
         renderChart(detailedProjections);
         renderSensitivity(inputs, (p) => {
