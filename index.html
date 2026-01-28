@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCF Super Calculator v1.0 | Professional Suite</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="glass-background"></div>
+
+    <main class="container">
+        <header>
+            <h1>DCF <span>Super Calculator v1.0</span></h1>
+            <p>Granular Unit-Driver & Credit Modeling</p>
+        </header>
+
+        <nav class="stepper">
+            <div class="step active" data-step="1"><span>1</span> Raw Data</div>
+            <div class="step" data-step="2"><span>2</span> Variables</div>
+            <div class="step" data-step="3"><span>3</span> FCF Model</div>
+            <div class="step" data-step="4"><span>4</span> NCF & Credit</div>
+        </nav>
+
+        <div class="content">
+            <!-- STEP 1: RAW DATA -->
+            <section id="step1" class="step-content active">
+                <div class="card full-width">
+                    <h3>Step 1: Raw Data Input</h3>
+                    <p class="subtitle">Paste unorganized balance sheet or P&L data here.</p>
+                    <textarea id="excelPaste" placeholder="Copy-paste from Excel here..."></textarea>
+                    <div class="data-preview hidden" id="dataPreview">
+                        <h4>Data Preview</h4>
+                        <div class="table-container">
+                            <table id="previewTable"></table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 2: VARIABLES (DRIVER MODEL) -->
+            <section id="step2" class="step-content">
+                <div class="calculator-grid">
+                    <div class="input-panel">
+                        <div class="card">
+                            <h3>Revenue Drivers</h3>
+                            <div class="input-group">
+                                <label for="units">Baseline Units / Volume</label>
+                                <input type="number" id="units" value="1000000">
+                            </div>
+                            <div class="input-group">
+                                <label for="price">Price per Unit ($)</label>
+                                <input type="number" id="price" value="100">
+                            </div>
+                            <div class="input-group">
+                                <label for="unitGrowth">Annual Volume Growth (%)</label>
+                                <input type="number" id="unitGrowth" value="5" step="0.1">
+                            </div>
+                            <div class="input-group">
+                                <label for="priceGrowth">Annual Price Growth (%)</label>
+                                <input type="number" id="priceGrowth" value="2" step="0.1">
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>Operating Efficiency</h3>
+                            <div class="input-group">
+                                <label for="cogsPct">COGS as % of Revenue</label>
+                                <input type="number" id="cogsPct" value="60" step="0.1">
+                            </div>
+                            <div class="input-group">
+                                <label for="sgaPct">SG&A as % of Revenue</label>
+                                <input type="number" id="sgaPct" value="15" step="0.1">
+                            </div>
+                            <div class="input-group">
+                                <label for="daPct">D&A as % of Revenue</label>
+                                <input type="number" id="daPct" value="5" step="0.1">
+                            </div>
+                            <div class="input-group">
+                                <label for="taxRate">Effective Tax Rate (%)</label>
+                                <input type="number" id="taxRate" value="21">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="results-panel">
+                        <div class="card">
+                            <h3>Investment Assumptions</h3>
+                            <div class="input-group">
+                                <label for="capexPct">CapEx as % of Revenue</label>
+                                <input type="number" id="capexPct" value="6" step="0.1">
+                            </div>
+                            <div class="input-group">
+                                <label for="nwcPct">NWC Change as % of Revenue Δ</label>
+                                <input type="number" id="nwcPct" value="2" step="0.1">
+                            </div>
+                        </div>
+                        <div class="card chart-card">
+                            <h3>Projected Revenue Trend</h3>
+                            <canvas id="fcfChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 3: FCF MODEL -->
+            <section id="step3" class="step-content">
+                <div class="calculator-grid">
+                    <div class="input-panel">
+                        <div class="card">
+                            <h3>Valuation Methodology</h3>
+                            <div class="input-group">
+                                <label for="modelType">Valuation Base</label>
+                                <select id="modelType">
+                                    <option value="unlevered">Unlevered (Enterprise Value)</option>
+                                    <option value="levered">Levered (Equity Value)</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="discountRate" id="discountRateLabel">Discount Rate (WACC) (%)</label>
+                                <input type="number" id="discountRate" value="8.5" step="0.1">
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>Terminal Value</h3>
+                            <div class="input-group">
+                                <label for="tvMethod">Method</label>
+                                <select id="tvMethod">
+                                    <option value="growth">Gordon Growth</option>
+                                    <option value="multiple">Exit Multiple</option>
+                                </select>
+                            </div>
+                            <div class="input-group" id="tvInputGroup">
+                                <label for="tvInput" id="tvInputLabel">LT Growth (%)</label>
+                                <input type="number" id="tvInput" value="2.0" step="0.1">
+                            </div>
+                            <div class="input-group hidden" id="metricGroup">
+                                <label for="terminalMetric">Exit EBITDA Multiple (x)</label>
+                                <input type="number" id="terminalMetric" value="10">
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>Optional Features</h3>
+                            <div class="input-group flex-row">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="toggleSensitivity" checked>
+                                    Include Sensitivity Analysis
+                                </label>
+                            </div>
+                            <div class="input-group flex-row">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="toggleCredit" checked>
+                                    Include Credit Model Metrics
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="results-panel">
+                        <div class="card result-primary highlight-card">
+                            <h3>Implied Share Price</h3>
+                            <div class="price-display">
+                                <span class="currency">$</span>
+                                <span id="impliedPrice">0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <label id="evLabel">Enterprise Value</label>
+                                <div class="value" id="enterpriseValue">$0M</div>
+                            </div>
+                            <div class="stat-card">
+                                <label>Equity Value</label>
+                                <div class="value" id="equityValue">$0M</div>
+                            </div>
+                        </div>
+
+                        <div class="card sensitivity-card">
+                            <h3>Sensitivity Matrix</h3>
+                            <div class="table-container">
+                                <table id="sensitivityTable"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 4: NCF & CREDIT MODEL -->
+            <section id="step4" class="step-content">
+                <div class="calculator-grid">
+                    <div class="input-panel">
+                        <div class="card">
+                            <h3>Financing & Credit Inputs</h3>
+                            <div class="input-group">
+                                <label for="interestExpense">Annual Interest Expense ($M)</label>
+                                <input type="number" id="interestExpense" value="15">
+                            </div>
+                            <div class="input-group">
+                                <label for="netBorrowing">Debt Issuance / (Repayment) ($M)</label>
+                                <input type="number" id="netBorrowing" value="-20">
+                            </div>
+                            <div class="input-group">
+                                <label for="netDebt">Total Net Debt ($M)</label>
+                                <input type="number" id="netDebt" value="500">
+                            </div>
+                            <div class="input-group">
+                                <label for="shares">Shares Outstanding (M)</label>
+                                <input type="number" id="shares" value="100">
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>Optional Checks</h3>
+                            <div class="input-group flex-row">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="midYear">
+                                    Mid-year Discounting
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="results-panel">
+                        <div class="card" id="creditMetricsPanel">
+                            <h3>Credit Model Proposal Metrics</h3>
+                            <div class="stats-grid">
+                                <div class="stat-card highlight-metric">
+                                    <label>Interest Coverage (EBIT / Int)</label>
+                                    <div class="value" id="intCoverage">0.0x</div>
+                                </div>
+                                <div class="stat-card highlight-metric">
+                                    <label>Debt / EBITDA</label>
+                                    <div class="value" id="debtEbitda">0.0x</div>
+                                </div>
+                            </div>
+                            <div class="credit-status" id="creditStatus">
+                                <p>Checking credit worthiness...</p>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>Net Cash Flow (NCF) Projection</h3>
+                            <div class="table-container">
+                                <table id="ncfTable">
+                                    <!-- Populated by JS -->
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="nav-controls">
+            <button class="btn-nav hidden" id="prevBtn">Back</button>
+            <button class="btn-nav" id="nextBtn">Continue to Variables</button>
+        </div>
+    </main>
+
+    <script src="logic.js"></script>
+    <script src="ui.js"></script>
+</body>
+
+</html>
